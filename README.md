@@ -1,3 +1,13 @@
+# NOTE for Reveri devs
+* When you want to make a new Firebase SDK version available
+1. Go to [Releases](https://github.com/reveri-health/firebase-ios-sdk-xcframeworks/releases)
+2. Find the draft that corresponds to the version you want to release
+3. Edit Draft
+4. Generate release notes
+5. Publish
+6. Update references in your project
+
+
 # Firebase xcframework integration with SPM
 
 A small mirror for https://github.com/firebase/firebase-ios-sdk, to add support for using their binary dependencies (xcframeworks) with swift package manager. 
