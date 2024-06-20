@@ -285,59 +285,55 @@ current=$(latest_release_number $xcframeworks_repo)
 debug=$(echo $@ || "" | grep debug)
 skip_release=$(echo $@ || "" | grep skip-release)
 
-if [[ $latest != $current || $debug ]]; then
-    echo "$current is out of date. Updating to $latest..."
-    distribution="dist"
-    sources="Sources"
-    package="Package.swift"
+echo "Force updating to $latest... regardless of if it already exists"
+distribution="dist"
+sources="Sources"
+package="Package.swift"
 
-    # Generate files in a temporary directory
-    # Use subshell to return to original directory when finished with scratchwork
-    create_scratch
-    (
-        cd $scratch
-        home=$OLDPWD
-        echo "Downloading latest release..."
-        gh release download --pattern 'Firebase.zip' --repo $firebase_repo
-        echo "Unzipping.."
-        unzip -q Firebase.zip
-        echo "Preparing xcframeworks for distribution..."
-        cd Firebase
-        rename_frameworks "_"
-        zip_frameworks
-        echo "Creating distribution files..."
-        prepare_files_for_distribution "../$distribution"
-        echo "Creating source files..."
-        generate_sources "../$sources"
-        # Create test package using local binaries and make sure it builds
-        generate_swift_package "../$package" "$home/package_template.swift" "../$distribution" $xcframeworks_repo $distribution
-        echo "Validating..."
-        (cd ..; swift package dump-package | read pac)
-        (cd ..; swift build) # TODO: create tests and replace this line with `(cd ..; swift test)`
-        # Create release package using remote binaries and make sure the Package.swift file is parseable
-        generate_swift_package "../$package" "$home/package_template.swift" "../$distribution" $xcframeworks_repo ''
-        echo "Validating..."
-        (cd ..; swift package dump-package | read pac)
-    )
+# Generate files in a temporary directory
+# Use subshell to return to original directory when finished with scratchwork
+create_scratch
+(
+    cd $scratch
+    home=$OLDPWD
+    echo "Downloading latest release..."
+    gh release download --pattern 'Firebase.zip' --repo $firebase_repo
+    echo "Unzipping.."
+    unzip -q Firebase.zip
+    echo "Preparing xcframeworks for distribution..."
+    cd Firebase
+    rename_frameworks "_"
+    zip_frameworks
+    echo "Creating distribution files..."
+    prepare_files_for_distribution "../$distribution"
+    echo "Creating source files..."
+    generate_sources "../$sources"
+    # Create test package using local binaries and make sure it builds
+    generate_swift_package "../$package" "$home/package_template.swift" "../$distribution" $xcframeworks_repo $distribution
+    echo "Validating..."
+    (cd ..; swift package dump-package | read pac)
+    (cd ..; swift build) # TODO: create tests and replace this line with `(cd ..; swift test)`
+    # Create release package using remote binaries and make sure the Package.swift file is parseable
+    generate_swift_package "../$package" "$home/package_template.swift" "../$distribution" $xcframeworks_repo ''
+    echo "Validating..."
+    (cd ..; swift package dump-package | read pac)
+)
 
-    echo "Moving files to repo..."; cd ..
-    # Remove any existing files
-    if [ -d $sources ]; then rm -rf "$sources"; fi
-    if [ -f $package ]; then rm -f "$package"; fi
-    # Move generated files into the repo directory
-    mv "$scratch/$sources" "$sources"
-    mv "$scratch/$package" "$package"
+echo "Moving files to repo..."; cd ..
+# Remove any existing files
+if [ -d $sources ]; then rm -rf "$sources"; fi
+if [ -f $package ]; then rm -f "$package"; fi
+# Move generated files into the repo directory
+mv "$scratch/$sources" "$sources"
+mv "$scratch/$package" "$package"
 
-    # Skips deploy
-    if [[ $skip_release ]]; then echo "Done."; exit 0; fi
+# Skips deploy
+if [[ $skip_release ]]; then echo "Done."; exit 0; fi
 
-    # Deploy to repository
-    echo "Merging changes to Github..."
-    commit_changes "release/$latest"
-    echo "Creating release draft"
-    echo "Release $latest" | gh release create --target "release/$latest" --draft $latest $scratch/dist/*.xcframework.zip
-else
-    echo "$current is up to date."
-fi
+# Deploy to repository
+echo "Merging changes to Github..."
+commit_changes "release/$latest"
+echo "Creating release draft"
+echo "Release $latest" | gh release create --target "release/$latest" --draft $latest $scratch/dist/*.xcframework.zip
 
 echo "Done."
