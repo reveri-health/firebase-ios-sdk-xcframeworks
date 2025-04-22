@@ -3,7 +3,7 @@ name: Publish Release
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *' # Every day at midnight
+    - cron: '0 0 * * *' # Midnight every day
 
 jobs:
   build:
