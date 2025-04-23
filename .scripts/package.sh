@@ -186,7 +186,7 @@ write_target () {
     #    .process(\"Resources/$(resource_name $i)\")" >> $output; comma=","
     #    done; printf "\n      ]" >> $output;
     # fi
-    
+
     # Closing bracket
     printf "\n    )" >> $output
 }
@@ -335,6 +335,7 @@ if [[ $latest != $current || $debug ]]; then
     echo "Merging changes to Github..."
     commit_changes "release/$latest"
 
+    # Check if we should create release tags
     if git rev-parse "$latest" >/dev/null 2>&1; then
         echo "Tag $latest already exists. Skipping."
     else
@@ -344,10 +345,8 @@ if [[ $latest != $current || $debug ]]; then
         git push origin "$latest"
     fi
 
-    git push origin "$latest"
-
-    echo "Creating release draft"
-    echo "Release $latest" | gh release create --target "release/$latest" --title "Release $latest" --draft $latest $scratch/dist/*.xcframework.zip
+    echo "Creating release"
+    echo "Release $latest" | gh release create --target "release/$latest" --title "Release $latest" $latest $scratch/dist/*.xcframework.zip
 else
     echo "$current is up to date."
 fi
