@@ -176,7 +176,7 @@ write_target () {
         \"$exclude\"" >> $output; comma=",";
         done; printf "\n      ]" >> $output;
     fi
-    
+
     # Resources are expected to be inside the $library/Resources folder
     # Note: disabling because these resources will not be in the main bundle
     # https://github.com/akaffenberger/firebase-ios-sdk-xcframeworks/issues/23
@@ -334,8 +334,20 @@ if [[ $latest != $current || $debug ]]; then
     # Deploy to repository
     echo "Merging changes to Github..."
     commit_changes "release/$latest"
+
+    if git rev-parse "$latest" >/dev/null 2>&1; then
+        echo "Tag $latest already exists. Skipping."
+    else
+        # Tag the current commit with the version
+        git tag "$latest"
+        # Push the tag to the remote repository
+        git push origin "$latest"
+    fi
+
+    git push origin "$latest"
+
     echo "Creating release draft"
-    echo "Release $latest" | gh release create --target "release/$latest" --draft $latest $scratch/dist/*.xcframework.zip
+    echo "Release $latest" | gh release create --target "release/$latest" --title "Release $latest" --draft $latest $scratch/dist/*.xcframework.zip
 else
     echo "$current is up to date."
 fi
