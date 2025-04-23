@@ -176,7 +176,7 @@ write_target () {
         \"$exclude\"" >> $output; comma=",";
         done; printf "\n      ]" >> $output;
     fi
-    
+
     # Resources are expected to be inside the $library/Resources folder
     # Note: disabling because these resources will not be in the main bundle
     # https://github.com/akaffenberger/firebase-ios-sdk-xcframeworks/issues/23
@@ -186,7 +186,7 @@ write_target () {
     #    .process(\"Resources/$(resource_name $i)\")" >> $output; comma=","
     #    done; printf "\n      ]" >> $output;
     # fi
-    
+
     # Closing bracket
     printf "\n    )" >> $output
 }
