@@ -296,11 +296,40 @@ if [[ $latest != $current || $debug ]]; then
     create_scratch
     (
         cd $scratch
+        echo "Scratch directory: $scratch"
+        open $scratch
         home=$OLDPWD
         echo "Downloading latest release..."
         gh release download --pattern 'Firebase.zip' --repo $firebase_repo
         echo "Unzipping.."
+        # Find the zip file and ensure it's called Firebase.zip
+        zip_file=$(find . -name "*.zip" | head -n 1)
+        
+        if [ -n "$zip_file" ]; then
+            mv "$zip_file" "Firebase.zip"
+        fi
         unzip -q Firebase.zip
+        
+        # If there's no Firebase folder at the root, look for a relevant zip file and unzip it
+        if [ ! -d "Firebase" ]; then
+            echo "Firebase directory not found in root. Looking for zip file..."
+            # Look for Firebase zip files in subdirectories (excluding carthage)
+            for dir in */; do
+                if [ -d "$dir" ] && [ "$dir" != "carthage/" ]; then
+                    firebase_zip=$(find "$dir" -name "Firebase*.zip" | head -n 1)
+                    if [ -n "$firebase_zip" ]; then
+                        echo "Found Firebase zip in $dir: $firebase_zip"
+                        unzip -q "$firebase_zip"
+                        break
+                    fi
+                fi
+            done
+            # Did we find the right Firebase folder?
+            if [ ! -d "Firebase" ]; then
+                echo "Firebase directory not found in any subdirectory. Exiting."
+                exit 1
+            fi
+        fi
         echo "Preparing xcframeworks for distribution..."
         cd Firebase
         rename_frameworks "_"
