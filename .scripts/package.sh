@@ -269,6 +269,7 @@ find_and_extract_firebase_zip() {
     if [ -n "$zip_file" ]; then
         echo "Found downloaded zip file: $zip_file"
         mv "$zip_file" "Firebase.zip"
+        echo "Unzipping..."
         unzip -q Firebase.zip
     else
         echo "No downloaded zip file found in root directory. Exiting."
@@ -283,7 +284,7 @@ find_and_extract_firebase_zip() {
             if [ -d "$dir" ] && [ "$dir" != "carthage/" ]; then
                 firebase_zip=$(find "$dir" -name "Firebase*.zip" | head -n 1)
                 if [ -n "$firebase_zip" ]; then
-                    echo "Found Firebase zip in $dir: $firebase_zip"
+                    echo "Unzipping Firebase zip in $dir: $firebase_zip"
                     unzip -q "$firebase_zip"
                     break
                 fi
