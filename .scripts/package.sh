@@ -299,6 +299,37 @@ find_and_extract_firebase_zip() {
     echo "Firebase zip found and extracted successfully"
 }
 
+check_firebase_version () {
+    local expected="$1"
+    # Patch releases can keep FirebaseCore at an earlier patch (12.19.1 shipped Core 12.19.0), so compare major.minor
+    local plist="FirebaseAnalytics/FirebaseCore.xcframework/ios-arm64/FirebaseCore.framework/Info.plist"
+    local found=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist")
+    if [[ "${found%.*}" != "${expected%.*}" ]]; then
+        echo "Firebase.zip contains FirebaseCore $found, expected $expected. Exiting."
+        exit 1
+    fi
+}
+
+library_names () {
+    # Ex. `.library(\n name: "GoogleSignIn",` = "GoogleSignIn"
+    grep -A1 '\.library(' | grep -Eo 'name: "[^"]+"' | sed -E 's/name: "|"//g' | sort
+}
+
+check_products () {
+    local package="$1"
+    local version="$2"
+    # Products may only disappear in a new major version (Firebase 13 dropped GoogleSignIn)
+    local previous=$(git ls-remote --tags --refs $xcframeworks_repo "refs/tags/${version%%.*}.*" | sed 's/.*refs\/tags\///' | grep -vx "$version" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 || true)
+    if [[ -z $previous ]]; then return; fi
+    curl -fsSL "${xcframeworks_repo/github.com/raw.githubusercontent.com}/$previous/Package.swift" | library_names > "$scratch/previous_libraries.txt"
+    library_names < "$package" > "$scratch/new_libraries.txt"
+    local missing=$(comm -23 "$scratch/previous_libraries.txt" "$scratch/new_libraries.txt")
+    if [[ $missing ]]; then
+        echo "Products in $previous missing from $version: $(echo $missing). Exiting."
+        exit 1
+    fi
+}
+
 commit_changes() {
     branch=$1
     git checkout -b $branch
@@ -338,12 +369,14 @@ if [[ $latest != $current || $debug ]]; then
         echo "Scratch directory: $scratch"
         open $scratch
         home=$OLDPWD
-        echo "Downloading latest release..."
-        gh release download --pattern 'Firebase.zip' --repo $firebase_repo
-        
+        echo "Downloading release $latest..."
+        # Without a tag, gh downloads the release marked Latest, which is not $latest when upstream ships a backport
+        gh release download "$latest" --pattern 'Firebase.zip' --repo $firebase_repo
+
         find_and_extract_firebase_zip
         echo "Preparing xcframeworks for distribution..."
         cd Firebase
+        check_firebase_version $latest
         rename_frameworks "_"
         zip_frameworks
         echo "Creating distribution files..."
@@ -359,6 +392,7 @@ if [[ $latest != $current || $debug ]]; then
         generate_swift_package "../$package" "$home/package_template.swift" "../$distribution" $xcframeworks_repo ''
         echo "Validating..."
         (cd ..; swift package dump-package | read pac)
+        check_products "../$package" $latest
     )
 
     echo "Moving files to repo..."; cd ..
