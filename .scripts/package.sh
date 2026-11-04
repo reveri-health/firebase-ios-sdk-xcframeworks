@@ -318,12 +318,17 @@ library_names () {
 check_products () {
     local package="$1"
     local version="$2"
+    local tags previous missing
+    if ! tags=$(git ls-remote --tags --refs $xcframeworks_repo "refs/tags/${version%%.*}.*"); then
+        echo "Could not list the tags of $xcframeworks_repo to compare products. Exiting."
+        exit 1
+    fi
     # Products may only disappear in a new major version (Firebase 13 dropped GoogleSignIn)
-    local previous=$(git ls-remote --tags --refs $xcframeworks_repo "refs/tags/${version%%.*}.*" | sed 's/.*refs\/tags\///' | grep -vx "$version" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 || true)
+    previous=$(echo "$tags" | sed -n 's/.*refs\/tags\///p' | awk -v version="$version" '$0 != version' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
     if [[ -z $previous ]]; then return; fi
     curl -fsSL "${xcframeworks_repo/github.com/raw.githubusercontent.com}/$previous/Package.swift" | library_names > "$scratch/previous_libraries.txt"
     library_names < "$package" > "$scratch/new_libraries.txt"
-    local missing=$(comm -23 "$scratch/previous_libraries.txt" "$scratch/new_libraries.txt")
+    missing=$(comm -23 "$scratch/previous_libraries.txt" "$scratch/new_libraries.txt")
     if [[ $missing ]]; then
         echo "Products in $previous missing from $version: $(echo $missing). Exiting."
         exit 1
