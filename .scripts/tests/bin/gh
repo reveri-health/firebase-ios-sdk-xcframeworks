@@ -1,0 +1,23 @@
+#!/bin/bash
+# Serves release lists and Firebase.zip fixtures from $STUB_DIR the way the GitHub CLI would.
+echo "gh $*" >> "$STUB_DIR/calls.log"
+positional=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    --repo) repo=$2; shift 2 ;;
+    --pattern|--limit) shift 2 ;;
+    *) positional+=("$1"); shift ;;
+    esac
+done
+case "${positional[*]}" in
+"release list")
+    if [[ $repo == */firebase/firebase-ios-sdk ]]; then version=$STUB_FIREBASE_NEWEST; else version=$STUB_CURRENT; fi
+    printf 'Release %s\t\t%s\t2026-10-23T03:56:00Z\n' "$version" "$version" ;;
+"release download"*)
+    # Without a tag, gh downloads the release marked Latest
+    tag=${positional[2]:-$STUB_FIREBASE_LATEST}
+    cp "$STUB_DIR/releases/$tag/Firebase.zip" Firebase.zip ;;
+*)
+    echo "gh stub: unexpected call" >&2
+    exit 1 ;;
+esac

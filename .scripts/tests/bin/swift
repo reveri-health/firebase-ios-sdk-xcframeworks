@@ -1,0 +1,19 @@
+#!/bin/bash
+# Stands in for SwiftPM: real checksums, a manifest dump of $STUB_MANIFEST_LINES lines, and a build that rejects broken framework bundles.
+echo "swift $*" >> "$STUB_DIR/calls.log"
+case "$1 $2" in
+"package compute-checksum")
+    shasum -a 256 "$3" | cut -d' ' -f1 ;;
+"package dump-package")
+    if [[ $STUB_MANIFEST_INVALID ]]; then echo "error: Invalid manifest" >&2; exit 1; fi
+    echo "{"
+    yes '  "key": "value",' | head -n "${STUB_MANIFEST_LINES:-10}"
+    echo "}" ;;
+"build ")
+    # A framework whose Versions/Current symlink became a folder fails code-signature verification
+    broken=$(find dist -path '*.framework/Versions/Current' -type d)
+    if [[ $broken ]]; then echo "error: The signature of $broken cannot be verified" >&2; exit 1; fi ;;
+*)
+    echo "swift stub: unexpected call" >&2
+    exit 1 ;;
+esac

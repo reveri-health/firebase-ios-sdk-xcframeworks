@@ -1,0 +1,2 @@
+#!/bin/bash
+# Keeps package.sh from opening its scratch folder in Finder.

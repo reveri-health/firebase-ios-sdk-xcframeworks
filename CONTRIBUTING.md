@@ -11,6 +11,7 @@ The script performs the following actions:
 ## Running the script locally
 - Install github cli: `$ brew install gh`
 - Generate the swift package: `$ cd .scripts && sh package.sh debug skip-release`
+- Test the script without downloading anything (macOS): `$ bash .scripts/tests/package_test.sh`
 
 ## Testing locally
 There is an iOS Example project that can be used to test that the Package is working as expected.

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Lists $STUB_TAGS as the xcframeworks repo's tags, or fails like an unreachable remote.
+echo "git $*" >> "$STUB_DIR/calls.log"
+if [[ $1 != ls-remote ]]; then echo "git stub: unexpected call" >&2; exit 1; fi
+if [[ $STUB_LS_REMOTE_FAILS ]]; then echo "fatal: unable to access the repository" >&2; exit 128; fi
+prefix=${!#%\*}
+for tag in $STUB_TAGS; do
+    if [[ refs/tags/$tag == "$prefix"* ]]; then printf '%040d\trefs/tags/%s\n' 0 "$tag"; fi
+done
