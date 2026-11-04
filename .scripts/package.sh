@@ -76,7 +76,7 @@ prepare_files_for_distribution () {
     # Create the distribution folder
     mkdir $dist
     # Copy unzipped frameworks for testing (Package.swift using local binaries)
-    for i in */*.xcframework; do cp -rf $i $dist; done
+    for i in */*.xcframework; do cp -af $i $dist; done
     # Copy zipped frameworks for release (these will be uploaded to remote)
     for i in */*.xcframework.zip; do cp -f $i $dist; done
 }
